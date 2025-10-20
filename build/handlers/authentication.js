@@ -89,19 +89,19 @@ export const handleAdduser = async (req, res) => {
             port: 465,
             secure: true,
             auth: {
-                user: "paddingtonmarimo@gmail.com",
-                pass: "bwuh zjij tlsd ddsz",
+                user: "delpadsoftware@gmail.com",
+                pass: "iswo cvts gbrq ditg",
             },
         });
         const mailOptions = {
             to: userData.email,
-            subject: "ZIDA Lunch Team",
+            subject: "Cogie Lunch Team",
             html: `<!DOCTYPE html>
                     <html>
                     <head>
                         <meta charset="UTF-8">
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>ZIDA Account Creation</title>
+                        <title>Cogie Account Creation</title>
                         <style>
                             body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;  }
                             .container { max-width: 500px; background: #ffffff; padding: 20px; margin: 50px auto; border-radius: 8px; 
@@ -114,18 +114,19 @@ export const handleAdduser = async (req, res) => {
                     </head>
                     <body>
                         <div class="container">
-                            <img src="https://firebasestorage.googleapis.com/v0/b/test-dashboard-65d9c.appspot.com/o/ZIDA-LOGO-2023-01-1-768x392.png?alt=media&token=b6c07047-6aee-4488-b1a1-d86e4f3cfe81" alt="ZIDA Logo" class="logo">
-                            <h2>ZIDA Account Creation</h2>
-                            <p> Hi @${userData.email}. We welcome you to ZIDA Lunch Team. Below is your One Time Password, Change it as soon as you Log In:</p>
+                            <img src="https://firebasestorage.googleapis.com/v0/b/test-dashboard-65d9c.appspot.com/o/Cogie-LOGO-2023-01-1-768x392.png?alt=media&token=b6c07047-6aee-4488-b1a1-d86e4f3cfe81" alt="Cogie Logo" class="logo">
+                            <h2>Cogie Account Creation</h2>
+                            <p> Hi @${userData.email}. We welcome you to Cogie Team. Below is your One Time Password, Change it as soon as you Log In:</p>
                             <div class="otp">${password}</div>
                             <div class="footer">
-                                <p>© 2025 ZIDA. All rights reserved.</p>
+                                <p>© 2025 Cogie. All rights reserved.</p>
                             </div>
                         </div>
                     </body>
                     </html>`
         };
-        await transporter.sendMail(mailOptions);
+        const response = await transporter.sendMail(mailOptions);
+        console.log("Email sent: " + response.response);
         res.status(200).json({ message: "User added successfully." });
     }
     catch (error) {
@@ -202,17 +203,63 @@ export const handleUpdatePassword = async (req, res) => {
 export const handleSignUpUser = async (req, res) => {
     try {
         const userData = req.body;
-        if (!userData.name || !userData.email || !userData.password) {
+        if (!userData.email || !userData.password) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
+        console.log(userData);
         const existingUser = await user.findOne({ email: userData.email });
         if (existingUser) {
             return res.status(400).json({ message: 'User already exists' });
         }
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(req.body.password, salt);
-        await user.create({ ...userData, password: hashedPassword, permissions: [""] });
-        res.status(200).json({ message: 'Sign up successfully' });
+        const userdata = new user({ ...userData, password: hashedPassword, permissions: userData.permissions ?? [""] });
+        let transporter = nodemailer.createTransport({
+            service: "gmail",
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true,
+            auth: {
+                user: "delpadsoftware@gmail.com",
+                pass: "iswo cvts gbrq ditg",
+            },
+        });
+        const mailOptions = {
+            to: userData.email,
+            subject: "Cogie Lunch Team",
+            html: `<!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Cogie Account Creation</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;  }
+                            .container { max-width: 500px; background: #ffffff; padding: 20px; margin: 50px auto; border-radius: 8px; 
+                                    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4); text-align: center; border-width: 1px; border-color: rgb(145, 132, 132)}
+                            .logo { width: 120px; margin-bottom: 20px; }
+                            .otp { font-size: 24px; font-weight: bold; color: #2d89ff; background: #f1f7ff; padding: 10px 20px;
+                            display: inline-block; border-radius: 5px; margin: 10px 0; }
+                            .footer { font-size: 12px; color: #777; margin-top: 20px; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <img src="https://firebasestorage.googleapis.com/v0/b/test-dashboard-65d9c.appspot.com/o/Cogie-LOGO-2023-01-1-768x392.png?alt=media&token=b6c07047-6aee-4488-b1a1-d86e4f3cfe81" alt="Cogie Logo" class="logo">
+                            <h2>Cogie Account Creation</h2>
+                            <p> Hi @${userData.email}. We welcome you to Cogie Team. Below is your One Time Password, Change it as soon as you Log In:</p>
+                            <div class="otp">${userData.password}</div>
+                            <div class="footer">
+                                <p>© 2025 Cogie. All rights reserved.</p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>`
+        };
+        const response = await transporter.sendMail(mailOptions);
+        console.log("Email sent: " + response.response);
+        await userdata.save();
+        res.status(200).json({ message: 'User created successfully', user: userdata });
     }
     catch (error) {
         res.status(400).json({ message: 'Failed to create user' });
@@ -243,6 +290,7 @@ export const handleUpdateuserInfo = async (req, res) => {
         }
     }
     catch (error) {
+        console.log(error);
         res.status(404).json({ message: 'Failed to update user' });
     }
 };
@@ -375,6 +423,15 @@ export const handleSignOut = async (req, res) => {
         }
         await device.updateOne({ deviceID: deviceID, userId: userId }, { online: false, lastSeen: new Date().toISOString() });
         res.status(200).json({ message: "User signed out successfully" });
+    }
+    catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+};
+export const handleGetUsers = async (req, res) => {
+    try {
+        const users = await user.find();
+        res.status(200).json({ users });
     }
     catch (error) {
         return res.status(500).json({ message: error.message });

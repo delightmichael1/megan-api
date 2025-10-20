@@ -1,6 +1,7 @@
 // middlewares/authMiddleware.js
+import user from "../models/user.js";
 import jwt from "jsonwebtoken";
-export function authMiddleware(req, res, next) {
+export async function authMiddleware(req, res, next) {
     console.log(req.url);
     if (req.url.includes("/socket.io")) {
         return next();
@@ -22,6 +23,11 @@ export function authMiddleware(req, res, next) {
             if (decodedToken.exp < now) {
                 return res.status(401).json({ message: "Access denied." });
             }
+            const userdata = await user.findById(decodedToken._id);
+            if (!userdata) {
+                return res.status(401).json({ message: "Access denied." });
+            }
+            req.user = userdata;
             next();
         }
     }

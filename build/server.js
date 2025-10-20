@@ -1,16 +1,21 @@
-import { handleAdduser, handleSignIn, handleDeleteUser, handleGetUser, handleUpdatePassword, handleUpdateuserInfo, handleSignUpUser, refreshUserAccessToken, handleSignOut } from "./handlers/authentication.js";
+import { handleAdduser, handleSignIn, handleDeleteUser, handleGetUser, handleUpdatePassword, handleUpdateuserInfo, handleSignUpUser, refreshUserAccessToken, handleSignOut, handleGetUsers } from "./handlers/authentication.js";
 import "dotenv/config";
 import cors from "cors";
 import multer from "multer";
 import { Server } from "socket.io";
 import { createServer } from "http";
-import express, { urlencoded } from "express";
+import express from "express";
+import cron from "node-cron";
+import BackupSettings from "./models/backupsettings.js";
 import { authMiddleware } from "./middlware/middleware.js";
 import { initializeDatabaseConnection } from "./utils/storage.js";
-import { handleGetMessages, handleGetUnreadMessages, handleSendMessage } from "./handlers/messages.js";
-import { handleAddResource, handleDownloadResource, handleGetResources } from "./handlers/resources.js";
-import { handleAcceptConnection, handleCreateconnection, handleGetAllConnections, handleGetAllUsers, handleGetConnectionRequests } from "./handlers/connections.js";
-import { handleAIConversation } from "./handlers/ai_conversation.js";
+import { handleAddlesson, handleDeleteLesson, handleEnrolltoLesson, handleGetLesson, handleGetLessons, handleGetupcomingLessons, handlePublishLesson, handleUpdateLesson } from "./handlers/lessons.js";
+import { handleAddmodule, handleUpdatemodule, handleGetmodules, handleGetmodule, handleDeletemodule } from "./handlers/modules.js";
+import { handleAddquestion, handleUpdatequestion, handleGetquestions, handleGetquestion, handleDeletequestion } from "./handlers/questions.js";
+import { handleAddcertification, handleUpdatecertification, handleGetcertifications, handleGetcertification, handleDeletecertification, handleGetUserCerts } from "./handlers/certification.js";
+import { getDashboardData, getDashboardDataByUserId } from "./handlers/analysis.js";
+import { backupMongoDBRemote, handleGetBackups } from "./handlers/backup.js";
+import { handleAddresult, handleGetresults, handleGetresult } from "./handlers/results.js";
 initializeDatabaseConnection();
 const app = express();
 const server = createServer(app);
@@ -21,11 +26,24 @@ export const io = new Server(server, {
         methods: ["GET", "POST"]
     }
 });
-app.use(cors());
-app.use(express.json());
-app.use(urlencoded({ extended: false }));
+// 🔹 Enhanced CORS
+app.use(cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'x-platform', 'x-device-id', 'x-device-model', 'x-device-name', 'x-device-os', 'x-type', 'x-device-platform']
+}));
+// 🔹 Enhanced Body Parsing
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// app.use(express.text());
+// app.use(express.raw());
 // 🔹 File upload setup
 const upload = multer({ storage: multer.memoryStorage() });
+// 🔹 Health Check Route
+app.get('/health', (req, res) => {
+    res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
 // Socket.io
 io.on("connection", (socket) => {
     const userId = socket.handshake.headers["x-user-id"];
@@ -49,28 +67,96 @@ export function sendMessageToUser(userId, event, message) {
         console.log(`User ${userId} not connected`);
     }
 }
+// 🔹 Your existing routes
 app.post("/user/signin", handleSignIn);
 app.post("/user/signup", handleSignUpUser);
 app.get("/user", authMiddleware, handleGetUser);
+app.get("/users", authMiddleware, handleGetUsers);
 app.post("/user/add", authMiddleware, handleAdduser);
-app.get("/users", authMiddleware, handleGetAllUsers);
 app.post("/user/signout", authMiddleware, handleSignOut);
 app.delete("/users/:id", authMiddleware, handleDeleteUser);
 app.post("/user/update", authMiddleware, handleUpdateuserInfo);
 app.get("/user/refresh", authMiddleware, refreshUserAccessToken);
 app.post("/user/update/password", authMiddleware, handleUpdatePassword);
-app.post("/ai", authMiddleware, handleAIConversation);
-app.get("/connections", authMiddleware, handleGetAllConnections);
-app.post("/connection/accept", authMiddleware, handleAcceptConnection);
-app.post("/connection/request", authMiddleware, handleCreateconnection);
-app.get("/connection/requests", authMiddleware, handleGetConnectionRequests);
-app.get("/resources", authMiddleware, handleGetResources);
-app.get("/resource/download/:file", handleDownloadResource);
-app.post("/resource", authMiddleware, upload.single('file'), handleAddResource);
-app.get("/messages", authMiddleware, handleGetMessages);
-app.post("/messages", authMiddleware, handleSendMessage);
-app.delete("/messagge", authMiddleware, handleSendMessage);
-app.get("/messages/unread", authMiddleware, handleGetUnreadMessages);
+app.get("/user/dashboard", authMiddleware, getDashboardDataByUserId);
+app.get("/analysis", authMiddleware, getDashboardData);
+app.post("/lesson", authMiddleware, handleAddlesson);
+app.post("/lesson/enroll", authMiddleware, handleEnrolltoLesson);
+app.post("/lesson/:id", authMiddleware, handleUpdateLesson);
+app.post("/lesson/:id/publish", authMiddleware, handlePublishLesson);
+app.get("/lessons", authMiddleware, handleGetLessons);
+app.get("/lessons/upcoming", authMiddleware, handleGetupcomingLessons);
+app.get("/lesson/:id", authMiddleware, handleGetLesson);
+app.delete("/lesson/:id", authMiddleware, handleDeleteLesson);
+app.post("/module", authMiddleware, handleAddmodule);
+app.post("/module/:id", authMiddleware, handleUpdatemodule);
+app.get("/modules", authMiddleware, handleGetmodules);
+app.get("/module/:id", authMiddleware, handleGetmodule);
+app.delete("/module/:id", authMiddleware, handleDeletemodule);
+app.post("/result", authMiddleware, handleAddresult);
+app.get("/results", authMiddleware, handleGetresults);
+app.get("/result/:id", authMiddleware, handleGetresult);
+app.post("/question", authMiddleware, handleAddquestion);
+app.post("/question/:id", authMiddleware, handleUpdatequestion);
+app.get("/questions", authMiddleware, handleGetquestions);
+app.get("/question/:id", authMiddleware, handleGetquestion);
+app.delete("/question/:id", authMiddleware, handleDeletequestion);
+app.post("/certification", authMiddleware, handleAddcertification);
+app.post("/certification/:id", authMiddleware, handleUpdatecertification);
+app.get("/certifications", authMiddleware, handleGetcertifications);
+app.get("/user/certifications", authMiddleware, handleGetUserCerts);
+app.get("/certification/:id", authMiddleware, handleGetcertification);
+app.delete("/certification/:id", authMiddleware, handleDeletecertification);
+app.get("/backup", authMiddleware, handleGetBackups);
+app.post("/backup", async (req, res) => {
+    try {
+        await backupMongoDBRemote(process.env.MONGODB_URI, process.env.MONGODB_NAME);
+        const settings = await BackupSettings.findOne();
+        if (settings) {
+            settings.lastBackup = new Date();
+            await settings.save();
+        }
+        res.json({ success: true, message: "Backup created successfully" });
+    }
+    catch (err) {
+        console.log("###########", err);
+        res.status(500).json({ message: "internal error" });
+    }
+});
+// 🔹 Error Handling
+app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    res.status(500).json({
+        error: 'Internal Server Error',
+        message: err.message
+    });
+});
+// 🔹 404 Handler
+app.use('*', (req, res) => {
+    console.log(`Route not found: ${req.method} ${req.originalUrl}`);
+    res.status(404).json({ message: 'Route not found' });
+});
+cron.schedule("0 * * * *", async () => {
+    const settings = await BackupSettings.findOne();
+    if (!settings)
+        return;
+    const now = new Date();
+    let shouldBackup = false;
+    if (settings.interval === "daily") {
+        shouldBackup = !settings.lastBackup || (now.getTime() - settings.lastBackup.getTime()) > 24 * 60 * 60 * 1000;
+    }
+    else if (settings.interval === "weekly") {
+        shouldBackup = !settings.lastBackup || (now.getTime() - settings.lastBackup.getTime()) > 7 * 24 * 60 * 60 * 1000;
+    }
+    else if (settings.interval === "monthly") {
+        shouldBackup = !settings.lastBackup || (now.getTime() - settings.lastBackup.getTime()) > 30 * 24 * 60 * 60 * 1000;
+    }
+    if (shouldBackup) {
+        await backupMongoDBRemote(process.env.MONGODB_URI, process.env.MONGODB_NAME);
+        settings.lastBackup = now;
+        await settings.save();
+    }
+});
 server.listen(process.env.PORT, () => {
     console.log(`Server and Socket.IO running on port: ${process.env.PORT}`);
 });

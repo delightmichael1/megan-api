@@ -1,4 +1,4 @@
-import user from "../models/user.js";
+import user from "../models/user";
 /**
  * Advanced User Matching Algorithm
  * Scores users based on multiple compatibility factors

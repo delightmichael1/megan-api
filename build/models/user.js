@@ -3,19 +3,20 @@ const Schema = mongoose.Schema;
 const UserSchema = new Schema({
     name: { type: String, required: true },
     title: { type: String },
-    yearStarted: { type: String },
-    company: { type: String },
-    industry: { type: String },
-    location: { type: String },
-    mentorshipType: { type: String, enum: ["mentor", "mentee", "both"] }, // optional enum
-    skills: [{ type: String }], // array of strings
+    department: { type: String },
+    progress: { type: Number, default: 0 },
+    permissions: { type: [String] },
     avatar: { type: String },
-    rating: { type: Number, default: 0, min: 0, max: 5 },
-    connections: { type: Number, default: 0 },
-    posts: { type: Number, default: 0 },
     isOnline: { type: Boolean, default: false },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    lastLogin: { type: String, default: "" },
+    enrolledLessons: [{ type: Schema.Types.ObjectId, ref: 'lesson' }],
+    completedLessons: [{ type: Schema.Types.ObjectId, ref: 'lesson' }],
+    certificates: [{ lessonId: String, earnedDate: Date }],
+    completedModules: [String],
+    learningStreak: { type: Number, default: 0 },
+    totalHours: { type: Number, default: 0 },
 }, { timestamps: true });
 const user = mongoose.model("user", UserSchema);
 export default user;
