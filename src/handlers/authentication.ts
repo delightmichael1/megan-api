@@ -47,7 +47,6 @@ const handleDeviceAuth = async ({req, accessToken, refreshToken, userId}: any) =
         const name = req.header("X-Device-Name");
 
         if (!deviceId) {
-            console.log("Device ID not found");
             return { status: 401, error: new Error("invalid credentials") };
         }
 
@@ -109,19 +108,19 @@ export const handleAdduser = async (req: Request, res: Response): Promise<Respon
             port: 465,
             secure: true,
             auth: {
-                user: "delpadsoftware@gmail.com",
-                pass: "iswo cvts gbrq ditg",
+                user: process.env.GMAIL_ACCOUNT,
+                pass: process.env.GMAIL_APP_PASSWORD,
             },
         });
         const mailOptions = {
             to: userData.email,
-            subject: "Cogie Lunch Team",
+            subject: "POSB",
             html: `<!DOCTYPE html>
                     <html>
                     <head>
                         <meta charset="UTF-8">
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>Cogie Account Creation</title>
+                        <title>POSB Account Creation</title>
                         <style>
                             body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;  }
                             .container { max-width: 500px; background: #ffffff; padding: 20px; margin: 50px auto; border-radius: 8px; 
@@ -134,19 +133,17 @@ export const handleAdduser = async (req: Request, res: Response): Promise<Respon
                     </head>
                     <body>
                         <div class="container">
-                            <img src="https://firebasestorage.googleapis.com/v0/b/test-dashboard-65d9c.appspot.com/o/Cogie-LOGO-2023-01-1-768x392.png?alt=media&token=b6c07047-6aee-4488-b1a1-d86e4f3cfe81" alt="Cogie Logo" class="logo">
-                            <h2>Cogie Account Creation</h2>
-                            <p> Hi @${userData.email}. We welcome you to Cogie Team. Below is your One Time Password, Change it as soon as you Log In:</p>
+                            <h2>POSB Account Creation</h2>
+                            <p> Hi @${userData.email}. We welcome you to POSB Team. Below is your One Time Password, Change it as soon as you Log In:</p>
                             <div class="otp">${password}</div>
                             <div class="footer">
-                                <p>© 2025 Cogie. All rights reserved.</p>
+                                <p>© 2025 POSB. All rights reserved.</p>
                             </div>
                         </div>
                     </body>
                     </html>`
         };
-        const response = await transporter.sendMail(mailOptions);
-        console.log("Email sent: " + response.response);
+        transporter.sendMail(mailOptions);
         res.status(200).json({ message: "User added successfully." });
     } catch (error: any) {
         res.status(400).json({ message: "Failed to create user" });
@@ -251,19 +248,19 @@ export const handleSignUpUser = async (req: Request, res: Response) => {
             port: 465,
             secure: true,
             auth: {
-                user: "delpadsoftware@gmail.com",
-                pass: "iswo cvts gbrq ditg",
+                user: process.env.GMAIL_ACCOUNT,
+                pass: process.env.GMAIL_APP_PASSWORD,
             },
         });
         const mailOptions = {
             to: userData.email,
-            subject: "Cogie Lunch Team",
+            subject: "POSB",
             html: `<!DOCTYPE html>
                     <html>
                     <head>
                         <meta charset="UTF-8">
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>Cogie Account Creation</title>
+                        <title>POSB Account Creation</title>
                         <style>
                             body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;  }
                             .container { max-width: 500px; background: #ffffff; padding: 20px; margin: 50px auto; border-radius: 8px; 
@@ -276,19 +273,17 @@ export const handleSignUpUser = async (req: Request, res: Response) => {
                     </head>
                     <body>
                         <div class="container">
-                            <img src="https://firebasestorage.googleapis.com/v0/b/test-dashboard-65d9c.appspot.com/o/Cogie-LOGO-2023-01-1-768x392.png?alt=media&token=b6c07047-6aee-4488-b1a1-d86e4f3cfe81" alt="Cogie Logo" class="logo">
-                            <h2>Cogie Account Creation</h2>
-                            <p> Hi @${userData.email}. We welcome you to Cogie Team. Below is your One Time Password, Change it as soon as you Log In:</p>
+                            <h2>POSB Account Creation</h2>
+                            <p> Hi @${userData.email}. We welcome you to POSB Team. Below is your One Time Password, Change it as soon as you Log In:</p>
                             <div class="otp">${userData.password}</div>
                             <div class="footer">
-                                <p>© 2025 Cogie. All rights reserved.</p>
+                                <p>© 2025 POSB. All rights reserved.</p>
                             </div>
                         </div>
                     </body>
                     </html>`
         };
-        const response = await transporter.sendMail(mailOptions);
-        console.log("Email sent: " + response.response);
+        transporter.sendMail(mailOptions);
         await userdata.save();
         res.status(200).json({ message: 'User created successfully', user: userdata });
     } catch (error: any) {

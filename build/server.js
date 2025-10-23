@@ -119,7 +119,6 @@ app.post("/backup", async (req, res) => {
         res.json({ success: true, message: "Backup created successfully" });
     }
     catch (err) {
-        console.log("###########", err);
         res.status(500).json({ message: "internal error" });
     }
 });
